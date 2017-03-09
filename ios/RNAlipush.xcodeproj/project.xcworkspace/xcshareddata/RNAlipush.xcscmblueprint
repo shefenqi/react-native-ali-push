@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "AA78E54556FA9E02879DFA4EDADF959CFB1DAE93",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "AA78E54556FA9E02879DFA4EDADF959CFB1DAE93" : 9223372036854775807,
+    "9E006B0747C9557387D899E03BEE77210A122C1D" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "5B25031E-EAEB-44F0-A053-B5658CF7A679",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "AA78E54556FA9E02879DFA4EDADF959CFB1DAE93" : "react-native-alipush\/",
+    "9E006B0747C9557387D899E03BEE77210A122C1D" : ".."
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "RNAlipush",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "RNAlipush\/RNAlipush.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/shefenqi\/mall.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "9E006B0747C9557387D899E03BEE77210A122C1D"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/pampang\/react-native-alipush.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "AA78E54556FA9E02879DFA4EDADF959CFB1DAE93"
+    }
+  ]
+}
