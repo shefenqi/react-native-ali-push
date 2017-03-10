@@ -12,8 +12,12 @@
 #import <CloudPushSDK/CloudPushSDK.h>
 #import "RCTEventDispatcher.h"
 
+#define CCPDidReceiveMessageNotification  @"CCPDidReceiveMessageNotification"
+#define CCPDidReceiveApnsNotification  @"CCPDidReceiveApnsNotification"
+#define CCPDidOpenedApnsNotification @"CCPDidOpenedApnsNotification"
+
 @interface RNAlipush : NSObject <RCTBridgeModule>
 
-- (void)initCloudPushWithAppKey:(NSString *)appKey AndAppSecret:(NSString *)appSecret;
++ (void)initCloudPushWithAppKey:(NSString *)appKey AndAppSecret:(NSString *)appSecret;
 
 @end
