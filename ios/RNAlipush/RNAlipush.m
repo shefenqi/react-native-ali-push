@@ -12,10 +12,31 @@
 
 RCT_EXPORT_MODULE();
 
-RCT_REMAP_METHOD(getDeviceId,
-                 resolver:(RCTPromiseResolveBlock)resolve
-                 rejecter:(RCTPromiseRejectBlock)reject) {
+RCT_EXPORT_METHOD(getDeviceId:(RCTPromiseResolveBlock)resolve
+                  reject:(__unused RCTPromiseRejectBlock)reject) {
     resolve([CloudPushSDK getDeviceId]);
+}
+
+/**
+ * 检查是否有未处理的push
+ */
+RCT_EXPORT_METHOD(checkStartUpPush:(RCTPromiseResolveBlock)resolve
+                  reject:(__unused RCTPromiseRejectBlock)reject) {
+    if (self.startUpNotification) {
+        resolve(self.startUpNotification);
+        self.startUpNotification = nil;
+    } else {
+        resolve(@"empty");
+    }
+}
+
+
+/**
+ * RCTEventEmitter的用法：http://blog.csdn.net/pz789as/article/details/52837853
+ * 导出你所有的事件的名字，有多少写多少
+ */
+- (NSArray<NSString *> *)supportedEvents {
+    return @[CCPDidReceiveMessageNotification, CCPDidReceiveApnsNotification, CCPDidOpenedApnsNotification];
 }
 
 /**
@@ -23,6 +44,7 @@ RCT_REMAP_METHOD(getDeviceId,
  */
 - (instancetype)init {
     self = [super init];
+    self.didReactLoad = false;
     
     // 注册监听事件
     [self registerObserver];
@@ -65,16 +87,10 @@ RCT_REMAP_METHOD(getDeviceId,
                           name:CCPDidReceiveApnsNotification
                         object:nil];
     
-//    // 打开ios官方apns推送。CCPDidOpenApnsNotification是自定义的。
-//    [defaultCenter addObserver:self
-//                      selector:@selector(onApnsNotificationOpened:)
-//                          name:CCPDidOpenedApnsNotification
-//                        object:nil];
-    
-//    [defaultCenter addObserver:self
-//                      selector:@selector(reactJSDidload)
-//                          name:RCTJavaScriptDidLoadNotification
-//                        object:nil];
+    [defaultCenter addObserver:self
+                      selector:@selector(reactDidload)
+                          name:RCTJavaScriptDidLoadNotification
+                        object:nil];
 
 }
 
@@ -85,14 +101,18 @@ RCT_REMAP_METHOD(getDeviceId,
  *    @param     notification
  */
 - (void)onMessageReceived:(NSNotification *)notification {
+    if (!self.didReactLoad) {
+        self.startUpNotification = notification;
+        return;
+    }
+    
     CCPSysMessage *message = [notification object];
     NSString *title = [[NSString alloc] initWithData:message.title encoding:NSUTF8StringEncoding];
     NSString *body = [[NSString alloc] initWithData:message.body encoding:NSUTF8StringEncoding];
     NSLog(@"Receive message title: %@, content: %@.", title, body);
     
     // 在这里应该发送一个消息到js端
-    [self.bridge.eventDispatcher sendAppEventWithName:CCPDidReceiveMessageNotification
-                                                 body:[notification userInfo]];
+    [self sendEventWithName:CCPDidReceiveMessageNotification body:[notification userInfo]];
 }
 
 
@@ -102,14 +122,27 @@ RCT_REMAP_METHOD(getDeviceId,
  *    @param     notification
  */
 - (void)onApnsNotificationReceived:(NSNotification *)notification {
-    CCPSysMessage *message = [notification object];
-    NSString *title = [[NSString alloc] initWithData:message.title encoding:NSUTF8StringEncoding];
-    NSString *body = [[NSString alloc] initWithData:message.body encoding:NSUTF8StringEncoding];
-    NSLog(@"Receive message title: %@, content: %@.", title, body);
+    id userInfo = [notification object];
+    NSLog(@"userInfo if %@", userInfo);
+
+    if (!self.didReactLoad) {
+        self.startUpNotification = userInfo;
+        return;
+    }
     
     // 在这里应该发送一个消息到js端
-    [self.bridge.eventDispatcher sendAppEventWithName:CCPDidReceiveApnsNotification
-                                                 body:[notification userInfo]];
+    [self sendEventWithName:CCPDidReceiveApnsNotification body:userInfo];
+}
+
+- (void)reactDidload {
+    NSLog(@"reactDidLoad");
+    self.didReactLoad = true;
+}
+
+- (void)dealloc {
+    NSLog(@"dealloc");
+    // 避免exc_bac_access
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 @end
