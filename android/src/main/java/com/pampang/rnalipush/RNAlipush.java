@@ -94,7 +94,7 @@ public class RNAlipush extends ReactContextBaseJavaModule {
             WritableMap map = Arguments.createMap();
             // 如果sStartUpPushMap为空，则代表没有启动的推送
             if (sStartUpPushMap == null || sStartUpPushMap.size() < 1) {
-                map.putBoolean("hasPush", false);
+                promise.resolve("empty");
             } else {
                 // 把sStartUpPushMap的数据全部返回
                 Log.i(TAG, "startUpPushMap = " + sStartUpPushMap.toString());
@@ -103,8 +103,8 @@ public class RNAlipush extends ReactContextBaseJavaModule {
                 map.putString("summary", sStartUpPushMap.get("summary"));
                 map.putString("extraMap", sStartUpPushMap.get("extraMap"));
                 sStartUpPushMap.clear();
+                promise.resolve(map);
             }
-            promise.resolve(map);
         } catch (Exception e) {
             // 发生错误，则返回报错
             promise.reject(e.getMessage());
