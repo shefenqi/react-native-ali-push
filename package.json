@@ -1,5 +1,5 @@
 {
-  "name": "react-native-alipush",
+  "name": "react-native-ali-push",
   "version": "0.0.1",
   "description": "阿里云推送 for react-native",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pampang/react-native-alipush.git"
+    "url": "git+https://github.com/shefenqi/react-native-ali-push.git"
   },
   "keywords": [
     "react-native",
@@ -20,7 +20,7 @@
   "author": "pampang",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/pampang/react-native-alipush/issues"
+    "url": "https://github.com/shefenqi/react-native-ali-push/issues"
   },
-  "homepage": "https://github.com/pampang/react-native-alipush#readme"
+  "homepage": "https://github.com/shefenqi/react-native-ali-push#readme"
 }
