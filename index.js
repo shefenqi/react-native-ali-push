@@ -4,7 +4,11 @@ import {
   Platform,
   NativeModules,
 } from 'react-native';
-const { RNAlipush } = NativeModules;
+
+/**
+ * 目前只支持android部分
+ */
+const RNAlipush = Platform.OS === 'ios' ? {} : NativeModules.RNAlipush;
 
 // 根据不同的平台，选择不同的eventEmitter
 const EventEmitter = Platform.OS === 'android' ? DeviceEventEmitter : new NativeEventEmitter(RNAlipush);

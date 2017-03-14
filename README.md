@@ -33,6 +33,8 @@ npm link react-native-alipush
 
 ### ios配置
 
+解决utdid冲突的问题
+
 podfile下加入：
 
 ```
