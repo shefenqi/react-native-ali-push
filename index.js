@@ -33,14 +33,6 @@ export default class Alipush {
 
   /**
    * android only
-   * 检查是否存在未处理的native推送
-   */
-  static checkStartUpPush() {
-    return RNAlipush.checkStartUpPush();
-  }
-
-  /**
-   * android only
    * @param {function} cb
    */
   static addOnNotificationListener(cb) {

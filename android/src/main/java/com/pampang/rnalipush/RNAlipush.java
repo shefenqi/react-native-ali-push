@@ -3,18 +3,22 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.alibaba.sdk.android.push.CloudPushService;
 import com.alibaba.sdk.android.push.CommonCallback;
 import com.alibaba.sdk.android.push.MessageReceiver;
-import com.alibaba.sdk.android.push.common.util.JSONUtils;
 import com.alibaba.sdk.android.push.noonesdk.PushServiceFactory;
 import com.alibaba.sdk.android.push.notification.CPushMessage;
-import com.facebook.react.HeadlessJsTaskService;
+import com.facebook.react.ReactApplication;
+import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
@@ -26,26 +30,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.facebook.react.common.ApplicationHolder.getApplication;
+
 /**
  * Created by PAMPANG on 2017/3/3.
  */
 
 public class RNAlipush extends ReactContextBaseJavaModule {
 
-    // static表示“全局”或者“静态”的意思，用来修饰成员变量和成员方法，也可以形成静态static代码块，但是Java语言中没有全局变量的概念。
     private static String TAG = "Alipush";
     private static RNAlipush sAlipush;
-    private static ReactApplicationContext sRAC;
+    private static ReactApplicationContext sReactContext;
     private static Map<String, String> sStartUpPushMap = new HashMap<String, String>();
 
-    // 构造方法
     public RNAlipush(ReactApplicationContext reactContext) {
         super(reactContext);
-        sRAC = reactContext;
+        sReactContext = reactContext;
         sAlipush = this;
     }
 
-    // 覆写getName方法，它返回一个字符串名字，在JS中我们就使用这个名字调用这个模块
     @Override
     public String getName() {
         return "RNAlipush";
@@ -82,45 +85,80 @@ public class RNAlipush extends ReactContextBaseJavaModule {
         promise.resolve(pushService.getDeviceId());
     }
 
-    /**
-     * 检查是否存在未处理的startUpPush，有则将其返回
-     * 目前这个方法可行，实测可以在app中拿到数据。不过仅限于noAction
-     * @param promise: 用promise来做返回处理
-     */
-    @ReactMethod
-    public void checkStartUpPush(Promise promise) {
-        try {
-            Log.i(TAG, "checkStartUpPush");
-            WritableMap map = Arguments.createMap();
-            // 如果sStartUpPushMap为空，则代表没有启动的推送
-            if (sStartUpPushMap == null || sStartUpPushMap.size() < 1) {
-                promise.resolve("empty");
-            } else {
-                // 把sStartUpPushMap的数据全部返回
-                Log.i(TAG, "startUpPushMap = " + sStartUpPushMap.toString());
-                map.putBoolean("hasPush", true);
-                map.putString("title", sStartUpPushMap.get("title"));
-                map.putString("summary", sStartUpPushMap.get("summary"));
-                map.putString("extraMap", sStartUpPushMap.get("extraMap"));
-                sStartUpPushMap.clear();
-                promise.resolve(map);
-            }
-        } catch (Exception e) {
-            // 发生错误，则返回报错
-            promise.reject(e.getMessage());
-        }
-    }
-
     public static class CustomMessageReceiver extends MessageReceiver {
-        // 消息接收部分的LOG_TAG
         public static final String REC_TAG = "Alipush Receiver";
         public static final String ALIPUSH_ON_NOTIFICATION = "ALIPUSH_ON_NOTIFICATION";
         public static final String ALIPUSH_ON_NOTIFICATION_OPENED = "ALIPUSH_ON_NOTIFICATION_OPENED";
         public static final String ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION = "ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION";
 
         /**
+         * 推送处理入口
+         * @param eventName
+         * @param title
+         * @param summary
+         * @param extraMap
+         */
+        private void handleNotification(final String eventName, final String title, final String summary, final String extraMap) {
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+                public void run() {
+                    // Construct and load our normal React JS code bundle
+                    ReactInstanceManager mReactInstanceManager = ((ReactApplication) getApplication()).getReactNativeHost().getReactInstanceManager();
+                    ReactContext context = mReactInstanceManager.getCurrentReactContext();
+                    // If it's constructed, send a notification
+                    if (context != null) {
+                        sendEvent(eventName, convertToWritableMap(title, summary, extraMap));
+                    } else {
+                        // Otherwise wait for construction, then send the notification
+                        mReactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
+                            public void onReactContextInitialized(ReactContext context) {
+                                sendEvent(eventName, convertToWritableMap(title, summary, extraMap));
+                            }
+                        });
+                        if (!mReactInstanceManager.hasStartedCreatingInitialContext()) {
+                            // Construct it in the background
+                            mReactInstanceManager.createReactContextInBackground();
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * 发送事件到js端
+         * @param eventName
+         * @param map
+         */
+        private void sendEvent(String eventName, @Nullable WritableMap map) {
+            // 此处需要添加hasActiveCatalystInstance，否则可能造成崩溃
+            // 问题解决参考: https://github.com/walmartreact/react-native-orientation-listener/issues/8
+            if(sReactContext.hasActiveCatalystInstance()) {
+                Log.i(REC_TAG, "hasActiveCatalystInstance");
+                sReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit(eventName, map);
+            } else {
+                Log.i(REC_TAG, "not hasActiveCatalystInstance");
+            }
+        }
+
+        /**
+         * 转换推送数据为writableMap
+         * @param title
+         * @param summary
+         * @param extraMap
+         * @return
+         */
+        private WritableMap convertToWritableMap(String title, String summary, String extraMap) {
+            WritableMap map = Arguments.createMap();
+            map.putString("title", title);
+            map.putString("summary", summary);
+            map.putString("extraMap", extraMap);
+            return map;
+        }
+
+        /**
          *
-         * @param context: ReceiverRestrictedContext，此处的context不是我们希望的reactContext
+         * @param context
          * @param title
          * @param summary
          * @param extraMap: 如："{a=11, _ALIYUN_NOTIFICATION_ID_=135459}"。 Map<String, String> 需要转换成 JSON 字符串
@@ -128,31 +166,10 @@ public class RNAlipush extends ReactContextBaseJavaModule {
          */
         @Override
         public void onNotification(Context context, String title, String summary, Map<String, String> extraMap) {
-            // TODO 处理推送通知
-            // context --> ReceiverRestrictedContext
-            // 此处的context不是我们希望的reactContext。看jpush-react-native的做法，是把当前的receiver写在RNAlipush这个类下，androidmanifest.xml写.RNAlipush$CutsomMessageReceiver，然后共享reactContext这个变量
             Log.e(REC_TAG, "Receive notification, title: " + title + ", summary: " + summary + ", extraMap: " + extraMap);
-            // 退出后，处于保活状态，writableMap可用；而极光推送则是不可用的，估计react-native相关的组件已经被干掉了。
-            // 然而，如果把deviceEventEmitter在appunmount之后取消订阅，则会无法接收到对应的消息
-
-            // 收到消息，并非需要及时处理的。处理应该是在点击的时候进行。那么这里只需做消息的转达即可。用一个try-catch实现，catch里面不做东西（因为那时候react并没准备好）。
-            try {
-                // 创建传送到js端的数据组合
-                WritableMap map = Arguments.createMap();
-                map.putString("title", title);
-                map.putString("summary", summary);
-                map.putString("extraMap", convertMapToJson(extraMap));
-
-                sRAC.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                        .emit(ALIPUSH_ON_NOTIFICATION, map);
-            } catch (Throwable e) {
-                Log.i(REC_TAG, "onNotification error");
-                e.printStackTrace();
-                // 目前构思，将当前推送信息存到module内，再分配一个主动获取的方法，在app启动完成后主动询问是否有未处理的推送
-                sStartUpPushMap.put("title", title);
-                sStartUpPushMap.put("summary", summary);
-                sStartUpPushMap.put("extraMap", convertMapToJson(extraMap));
-                Log.i(REC_TAG, "push data saved to sStartUpPushMap");
+            if(sReactContext != null && sReactContext.getCurrentActivity() != null) {
+                Log.e(REC_TAG, "app is ready, sending event.");
+                sendEvent(ALIPUSH_ON_NOTIFICATION, convertToWritableMap(title, summary, convertMapToJson(extraMap)));
             }
         }
 
@@ -174,63 +191,15 @@ public class RNAlipush extends ReactContextBaseJavaModule {
          * @param extraMap: 此时的extraMap为JSON格式的String
          */
         @Override
-        public void onNotificationOpened(Context context, String title, String summary, String extraMap) {
-            // 点击推送的时候，app已经在启动中了。所以此时判断app是否running无意义，因为一定running。
+        public void onNotificationOpened(Context context, final String title, final String summary, final String extraMap) {
             Log.e(REC_TAG, "onNotificationOpened, title: " + title + ", summary: " + summary + ", extraMap:" + extraMap);
-
-            // 收到消息，并非需要及时处理的。处理应该是在点击的时候进行。那么这里只需做消息的转达即可。用一个try-catch实现，catch里面不做东西（因为那时候react并没准备好）。
-            try {
-                // 创建传送到js端的数据组合
-                WritableMap map = Arguments.createMap();
-
-                map.putString("title", title);
-                map.putString("summary", summary);
-                map.putString("extraMap", extraMap);
-                sRAC.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                        .emit(ALIPUSH_ON_NOTIFICATION_OPENED, map);
-            } catch (Throwable e) {
-                Log.i(REC_TAG, "onNotificationOpened error");
-                e.printStackTrace();
-                // 目前构思，将当前推送信息存到module内，再分配一个主动获取的方法，在app启动完成后主动询问是否有未处理的推送
-                sStartUpPushMap.put("title", title);
-                sStartUpPushMap.put("summary", summary);
-                sStartUpPushMap.put("extraMap", extraMap);
-                Log.i(REC_TAG, "push data saved to sStartUpPushMap");
-            }
+            handleNotification(ALIPUSH_ON_NOTIFICATION_OPENED, title, summary, extraMap);
         }
 
         @Override
         protected void onNotificationClickedWithNoAction(Context context, String title, String summary, String extraMap) {
-            /**
-             * 在这里虽然isApplicationRunning会有对应的处理，但应用并不会自行启动。。。
-             */
             Log.e(REC_TAG, "onNotificationClickedWithNoAction, title: " + title + ", summary: " + summary + ", extraMap:" + extraMap);
-            // 收到消息，并非需要及时处理的。处理应该是在点击的时候进行。那么这里只需做消息的转达即可。用一个try-catch实现，catch里面不做东西（因为那时候react并没准备好）。
-            try {
-                Log.i(REC_TAG, "is App running: " + isApplicationRunning(context));
-                if (!isApplicationRunning(context)) {
-                    // 是否需要在这里加一个flag，来标识是否需要启动app?
-                    startApplication(context);
-                    throw new Exception("app is not running!");
-                }
-                // 创建传送到js端的数据组合
-                WritableMap map = Arguments.createMap();
-                map.putString("title", title);
-                map.putString("summary", summary);
-                map.putString("extraMap", extraMap);
-
-                // 向Js端发送事件
-                sRAC.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                        .emit(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION, map);
-            } catch (Throwable e) {
-                Log.i(REC_TAG, "onNotificationClickedWithNoAction error");
-                e.printStackTrace();
-                // 目前构思，将当前推送信息存到module内，再分配一个主动获取的方法，在app启动完成后主动询问是否有未处理的推送
-                sStartUpPushMap.put("title", title);
-                sStartUpPushMap.put("summary", summary);
-                sStartUpPushMap.put("extraMap", extraMap);
-                Log.i(REC_TAG, "push data saved to sStartUpPushMap");
-            }
+            handleNotification(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION, title, summary, extraMap);
         }
 
         @Override
@@ -246,16 +215,21 @@ public class RNAlipush extends ReactContextBaseJavaModule {
 
     /**
      * 查看application是否正在运行
-     * @param context 普通context即可，无须reactContext
+     * @param context
      * @return
      */
     private static boolean isApplicationRunning(final Context context) {
-        ActivityManager am = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
-        // getRunningTasks这里设置了maxNumber为100
-        List<ActivityManager.RunningTaskInfo> list = am.getRunningTasks(100);
-        for (ActivityManager.RunningTaskInfo info : list) {
-            if (info.topActivity.getPackageName().equals(context.getPackageName())) {
-                return true;
+        ActivityManager activityManager = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> processInfos = activityManager.getRunningAppProcesses();
+        if (processInfos != null) {
+            for (ActivityManager.RunningAppProcessInfo processInfo : processInfos) {
+                if (processInfo.processName.equals(getApplication().getPackageName())) {
+                    if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                        for (String d : processInfo.pkgList) {
+                            return true;
+                        }
+                    }
+                }
             }
         }
         return false;
@@ -279,12 +253,12 @@ public class RNAlipush extends ReactContextBaseJavaModule {
     }
 
     /**
-     * 为noAction而弄的
+     * 打开app
      * @param context
      */
     private static void startApplication(Context context) {
         // 此方法仅用于打开app，无法跳转到对应的activity
-        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(sRAC.getPackageName());
+        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(sReactContext.getPackageName());
         context.startActivity(launchIntent);
     }
 
