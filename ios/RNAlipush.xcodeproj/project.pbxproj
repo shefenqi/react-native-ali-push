@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		232B163F1EE003AF0067C820 /* RNAlipushBridgeQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 232B163E1EE003AF0067C820 /* RNAlipushBridgeQueue.m */; };
 		23C858ED1E71055400ADCF1D /* RNAlipush.m in Sources */ = {isa = PBXBuildFile; fileRef = 23C858EC1E71055400ADCF1D /* RNAlipush.m */; };
 		23C858EE1E71055400ADCF1D /* RNAlipush.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 23C858EB1E71055400ADCF1D /* RNAlipush.h */; };
 /* End PBXBuildFile section */
@@ -25,6 +26,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		232B163D1EE003AF0067C820 /* RNAlipushBridgeQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNAlipushBridgeQueue.h; sourceTree = "<group>"; };
+		232B163E1EE003AF0067C820 /* RNAlipushBridgeQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNAlipushBridgeQueue.m; sourceTree = "<group>"; };
 		23C858E81E71055400ADCF1D /* libRNAlipush.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNAlipush.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		23C858EB1E71055400ADCF1D /* RNAlipush.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNAlipush.h; sourceTree = "<group>"; };
 		23C858EC1E71055400ADCF1D /* RNAlipush.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNAlipush.m; sourceTree = "<group>"; };
@@ -60,6 +63,8 @@
 		23C858EA1E71055400ADCF1D /* RNAlipush */ = {
 			isa = PBXGroup;
 			children = (
+				232B163D1EE003AF0067C820 /* RNAlipushBridgeQueue.h */,
+				232B163E1EE003AF0067C820 /* RNAlipushBridgeQueue.m */,
 				23C858EB1E71055400ADCF1D /* RNAlipush.h */,
 				23C858EC1E71055400ADCF1D /* RNAlipush.m */,
 			);
@@ -125,6 +130,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				23C858ED1E71055400ADCF1D /* RNAlipush.m in Sources */,
+				232B163F1EE003AF0067C820 /* RNAlipushBridgeQueue.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
