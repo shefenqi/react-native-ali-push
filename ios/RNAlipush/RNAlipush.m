@@ -261,7 +261,7 @@ RCT_EXPORT_MODULE();
 //    NSString *body = [[NSString alloc] initWithData:message.body encoding:NSUTF8StringEncoding];
 //    NSLog(@"Receive message title: %@, content: %@.", title, body);
     
-    [self.bridge.eventDispatcher sendAppEventWithName:CCPDidReceiveMessageNotification body:[notification userInfo]];
+    [self.bridge.eventDispatcher sendDeviceEventWithName:CCPDidReceiveMessageNotification body:[notification userInfo]];
 }
 
 
@@ -273,7 +273,7 @@ RCT_EXPORT_MODULE();
     
     // 如果js部分未加载完，则先存档
     if ([RNAlipushBridgeQueue sharedInstance].jsDidLoad == YES) {
-        [self.bridge.eventDispatcher sendAppEventWithName:CCPDidReceiveApnsNotification body:userInfo];
+        [self.bridge.eventDispatcher sendDeviceEventWithName:CCPDidReceiveApnsNotification body:userInfo];
     } else {
         [[RNAlipushBridgeQueue sharedInstance] postNotification:notification status:@"receive"];
     }
@@ -285,7 +285,7 @@ RCT_EXPORT_MODULE();
     
     // 如果js部分未加载完，则先存档
     if ([RNAlipushBridgeQueue sharedInstance].jsDidLoad == YES) {
-        [self.bridge.eventDispatcher sendAppEventWithName:CCPDidOpenApnsNotification body:userInfo];
+        [self.bridge.eventDispatcher sendDeviceEventWithName:CCPDidOpenApnsNotification body:userInfo];
     } else {
         [[RNAlipushBridgeQueue sharedInstance] postNotification:notification status:@"open"];
     }
