@@ -85,9 +85,27 @@ public class RNAlipush extends ReactContextBaseJavaModule {
         promise.resolve(pushService.getDeviceId());
     }
 
+    /**
+     * 打开调试模式
+     */
+    @ReactMethod
+    public void turnOnDebug() {
+        final CloudPushService pushService = PushServiceFactory.getCloudPushService();
+        pushService.setLogLevel(CloudPushService.LOG_DEBUG);
+    }
+
+    /**
+     * 清空所有推送
+     */
+    @ReactMethod
+    public void clearNotifications() {
+        final CloudPushService pushService = PushServiceFactory.getCloudPushService();
+        pushService.clearNotifications();
+    }
+
     public static class CustomMessageReceiver extends MessageReceiver {
         public static final String REC_TAG = "Alipush Receiver";
-        public static final String ALIPUSH_ON_NOTIFICATION = "ALIPUSH_ON_NOTIFICATION";
+        public static final String ALIPUSH_ON_NOTIFICATION_RECEIVED = "ALIPUSH_ON_NOTIFICATION_RECEIVED";
         public static final String ALIPUSH_ON_NOTIFICATION_OPENED = "ALIPUSH_ON_NOTIFICATION_OPENED";
         public static final String ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION = "ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION";
 
@@ -169,12 +187,12 @@ public class RNAlipush extends ReactContextBaseJavaModule {
             Log.e(REC_TAG, "Receive notification, title: " + title + ", summary: " + summary + ", extraMap: " + extraMap);
             if(sReactContext != null && sReactContext.getCurrentActivity() != null) {
                 Log.e(REC_TAG, "app is ready, sending event.");
-                sendEvent(ALIPUSH_ON_NOTIFICATION, convertToWritableMap(title, summary, convertMapToJson(extraMap)));
+                sendEvent(ALIPUSH_ON_NOTIFICATION_RECEIVED, convertToWritableMap(title, summary, convertMapToJson(extraMap)));
             }
         }
 
         /**
-         * 需明白alipush里面message的定义
+         * 自定义message的处理
          * @param context
          * @param cPushMessage
          */

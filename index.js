@@ -29,6 +29,24 @@ export default class Alipush {
   }
 
   /**
+   * android && ios
+   * 开启调试模式
+   */
+  static turnOnDebug() {
+    if (Platform.OS === 'android') return;
+    RNAlipush.turnOnDebug();
+  }
+
+  /**
+   * android only
+   * 清空所有推送
+   */
+  static clearNotifications() {
+    if (Platform.OS === 'ios') return;
+    RNAlipush.clearNotifications();
+  }
+
+  /**
    * android ALIPUSH_ON_NOTIFICATION
    * ios CCPDidReceiveApnsNotification
    * @param {function} cb
