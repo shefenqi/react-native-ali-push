@@ -1,6 +1,5 @@
 import {
   DeviceEventEmitter,
-  NativeEventEmitter,
   Platform,
   NativeModules,
 } from 'react-native';
@@ -10,17 +9,14 @@ import {
  */
 const RNAlipush = NativeModules.RNAlipush;
 
-// 根据不同的平台，选择不同的eventEmitter
-const EventEmitter = Platform.OS === 'android' ? DeviceEventEmitter : new NativeEventEmitter(RNAlipush);
-
 // android only
 const ALIPUSH_ON_NOTIFICATION = 'ALIPUSH_ON_NOTIFICATION';
 const ALIPUSH_ON_NOTIFICATION_OPENED = 'ALIPUSH_ON_NOTIFICATION_OPENED';
 const ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION = 'ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION';
 
 // ios only
-const ALIPUSH_DID_RECEIVE_APNS_NOTIFICATION = 'CCPDidReceiveApnsNotification';
-const ALIPUSH_DID_OPEN_APNS_NOTIFICATION = 'CCPDidOpenApnsNotification';
+const CCPDidReceiveApnsNotification = 'CCPDidReceiveApnsNotification';
+const CCPDidOpenApnsNotification = 'CCPDidOpenApnsNotification';
 
 export default class Alipush {
 
@@ -37,23 +33,13 @@ export default class Alipush {
    * ios CCPDidReceiveApnsNotification
    * @param {function} cb
    */
-  static addOnNotificationListener(cb) {
-    if (Platform.OS === 'android') {
-      // 去掉原有的事件。在这里去掉而不在app unmount时去掉，是因为unmount时需要用到。
-      EventEmitter.removeAllListeners(ALIPUSH_ON_NOTIFICATION);
+  static addOnNotificationReceivedListener(cb) {
+    const EVENT_CODE = Platform.OS === 'android' ? ALIPUSH_ON_NOTIFICATION : CCPDidReceiveApnsNotification;
 
-      EventEmitter.addListener(ALIPUSH_ON_NOTIFICATION, (notification) => {
-        console.log(ALIPUSH_ON_NOTIFICATION, notification);
-        if (cb) cb(notification);
-      });
-    } else {
-      // 去掉原有的事件。在这里去掉而不在app unmount时去掉，是因为unmount时需要用到。
-      EventEmitter.removeAllListeners(ALIPUSH_DID_RECEIVE_APNS_NOTIFICATION);
-      EventEmitter.addListener(ALIPUSH_DID_RECEIVE_APNS_NOTIFICATION, (notification) => {
-        console.log(ALIPUSH_DID_RECEIVE_APNS_NOTIFICATION, notification);
-        if (cb) cb(notification);
-      });
-    }
+    DeviceEventEmitter.removeAllListeners(EVENT_CODE);
+    DeviceEventEmitter.addListener(EVENT_CODE, (notification) => {
+      if (cb) cb(notification);
+    });
   }
 
   /**
@@ -62,20 +48,12 @@ export default class Alipush {
    * @param {function} cb
    */
   static addOnNotificationOpenedListener(cb) {
-    if (Platform.OS === 'android') {
-      // 去掉原有的事件。在这里去掉而不在app unmount时去掉，是因为unmount时需要用到。
-      EventEmitter.removeAllListeners(ALIPUSH_ON_NOTIFICATION_OPENED);
-      EventEmitter.addListener(ALIPUSH_ON_NOTIFICATION_OPENED, (notification) => {
-        console.log(ALIPUSH_ON_NOTIFICATION_OPENED, notification);
-        if (cb) cb(notification);
-      });
-    } else {
-      EventEmitter.removeAllListeners(ALIPUSH_DID_OPEN_APNS_NOTIFICATION);
-      EventEmitter.addListener(ALIPUSH_DID_OPEN_APNS_NOTIFICATION, (notification) => {
-        console.log(ALIPUSH_DID_OPEN_APNS_NOTIFICATION, notification);
-        if (cb) cb(notification);
-      });
-    }
+    const EVENT_CODE = Platform.OS === 'android' ? ALIPUSH_ON_NOTIFICATION_OPENED : CCPDidOpenApnsNotification;
+
+    DeviceEventEmitter.removeAllListeners(EVENT_CODE);
+    DeviceEventEmitter.addListener(EVENT_CODE, (notification) => {
+      if (cb) cb(notification);
+    });
   }
 
   /**
@@ -84,9 +62,9 @@ export default class Alipush {
    */
   static addOnNotificationOpenedWithNoActionListener(cb) {
     if (Platform.OS === 'ios') return;
-    // 去掉原有的事件。在这里去掉而不在app unmount时去掉，是因为unmount时需要用到。
-    EventEmitter.removeAllListeners(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION);
-    EventEmitter.addListener(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION, (notification) => {
+
+    DeviceEventEmitter.removeAllListeners(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION);
+    DeviceEventEmitter.addListener(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION, (notification) => {
       console.log(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION, notification);
       if (cb) cb(notification);
     });
