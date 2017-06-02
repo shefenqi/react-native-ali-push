@@ -38,10 +38,6 @@ RCT_EXPORT_MODULE();
 
 
 + (void)initCloudPushWithAppKey:(NSString *)appKey AndAppSecret:(NSString *)appSecret {
-    
-    // 正式上线建议关闭
-    [CloudPushSDK turnOnDebug];
-    
     // SDK初始化
     [CloudPushSDK asyncInit:appKey appSecret:appSecret callback:^(CloudPushCallbackResult *res) {
         if (res.success) {
@@ -79,6 +75,7 @@ RCT_EXPORT_MODULE();
      * 注册deviceToken
      */
     [CloudPushSDK registerDevice:deviceToken withCallback:^(CloudPushCallbackResult *res) {
+        // 发送事件 CCPDidRegisterForRemoteNotificationsWithDeviceToken
         if (res.success) {
             NSLog(@"Register deviceToken success, deviceToken: %@", deviceToken);
         } else {
@@ -87,8 +84,15 @@ RCT_EXPORT_MODULE();
     }];
 }
 
+
++ (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification {
+    // 暂不处理
+}
+
+
 /**
  *  程序在打开时收到推送（ios 10 以下）
+ *  called only when your app is running in the foreground
  */
 + (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
     
@@ -101,20 +105,25 @@ RCT_EXPORT_MODULE();
     } else {
         application.applicationIconBadgeNumber = 0;
     }
-    
-    [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:userInfo];
+
+    // 判断程序是否在前台运行，是则加入app在前台的标识。
+    // 其实需要的是：点击与否（ios10下，对应操作是应用在后台），收到与否（ios10下，对应操作是应用在前台）。
+    if (application.applicationState == UIApplicationStateActive) {
+        // 应用在前台，是收到了推送
+        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:userInfo];
+    } else {
+        // 应用在后台，是打开了推送
+        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidOpenApnsNotification object:userInfo];
+    }
+
     // 通知打开回执上报
     [CloudPushSDK sendNotificationAck:userInfo];
 }
 
 
-+ (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification {
-    // 暂不处理
-}
-
-
 /**
  *  程序在打开时收到推送（ios 10 以下）
+ *  foreground or background
  */
 + (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
     NSLog(@"Receive one notification in didReceiveRemoteNotification:completionHandler.");
@@ -128,14 +137,15 @@ RCT_EXPORT_MODULE();
     }
     
     // 判断程序是否在前台运行，是则加入app在前台的标识。
-    NSMutableDictionary *mutableUserInfo = [userInfo mutableCopy];
+    // 其实需要的是：点击与否（ios10下，对应操作是应用在后台），收到与否（ios10下，对应操作是应用在前台）。
     if (application.applicationState == UIApplicationStateActive) {
-        [mutableUserInfo setValue:@"active" forKey:@"applicationState"];
+        // 应用在前台，是收到了推送
+        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:userInfo];
+    } else {
+        // 应用在后台，是打开了推送
+        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidOpenApnsNotification object:userInfo];
     }
-    // 将mutableUserInfo赋值给userInfo
-    userInfo = [NSDictionary dictionaryWithDictionary:mutableUserInfo];
-    
-    [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:userInfo];
+
     // 通知打开回执上报
     [CloudPushSDK sendNotificationAck:userInfo];
     
@@ -155,22 +165,17 @@ RCT_EXPORT_MODULE();
     // 处理iOS 10通知，并上报通知打开回执
     NSDictionary * userInfo = notification.request.content.userInfo;
     
-    // 判断程序是否在前台运行，是则加入app在前台的标识。
-    NSMutableDictionary *mutableUserInfo = [userInfo mutableCopy];
-    // 加入active字段
-    [mutableUserInfo setValue:@"active" forKey:@"applicationState"];
-    // 将mutableUserInfo赋值给userInfo
-    userInfo = [NSDictionary dictionaryWithDictionary:mutableUserInfo];
-    
+    // 应用在前台，是收到了推送
     [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:userInfo];
+
     // 通知打开回执上报
     [CloudPushSDK sendNotificationAck:userInfo];
     
     // 通知不弹出
-    completionHandler(UNNotificationPresentationOptionNone);
+//    completionHandler(UNNotificationPresentationOptionNone);
     
     // 通知弹出，且带有声音、内容和角标
-    //completionHandler(UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionBadge);
+    completionHandler(UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionBadge);
     
 }
 
@@ -182,7 +187,7 @@ RCT_EXPORT_MODULE();
     
     NSLog(@"Receive a notification in foregound at alipush didReceiveNotificationResponse.");
     
-    int badge = [response.notification.request.content.badge intValue];
+//    int badge = [response.notification.request.content.badge intValue];
     
     // 处理iOS 10通知，并上报通知打开回执
     NSDictionary * userInfo = response.notification.request.content.userInfo;
@@ -237,6 +242,12 @@ RCT_EXPORT_MODULE();
                       selector:@selector(onApnsNotificationReceived:)
                           name:CCPDidReceiveApnsNotification
                         object:nil];
+    
+    // 打开ios官方apns推送。CCPDidOpenApnsNotification是自定义的。
+    [defaultCenter addObserver:self
+                      selector:@selector(onApnsNotificationOpened:)
+                          name:CCPDidOpenApnsNotification
+                        object:nil];
 }
 
 
@@ -264,13 +275,25 @@ RCT_EXPORT_MODULE();
     if ([RNAlipushBridgeQueue sharedInstance].jsDidLoad == YES) {
         [self.bridge.eventDispatcher sendAppEventWithName:CCPDidReceiveApnsNotification body:userInfo];
     } else {
-        [[RNAlipushBridgeQueue sharedInstance] postNotification:notification];
+        [[RNAlipushBridgeQueue sharedInstance] postNotification:notification status:@"receive"];
     }
 }
 
+
+- (void)onApnsNotificationOpened:(NSNotification *)notification {
+    id userInfo = [notification object];
+    
+    // 如果js部分未加载完，则先存档
+    if ([RNAlipushBridgeQueue sharedInstance].jsDidLoad == YES) {
+        [self.bridge.eventDispatcher sendAppEventWithName:CCPDidOpenApnsNotification body:userInfo];
+    } else {
+        [[RNAlipushBridgeQueue sharedInstance] postNotification:notification status:@"open"];
+    }
+}
+
+
 - (void)jsDidLoad {
     [RNAlipushBridgeQueue sharedInstance].jsDidLoad = YES;
-    [[RNAlipushBridgeQueue sharedInstance] scheduleBridgeQueue];
     
     if ([RNAlipushBridgeQueue sharedInstance].openedRemoteNotification != nil) {
         [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:[RNAlipushBridgeQueue sharedInstance].openedRemoteNotification];
@@ -279,11 +302,18 @@ RCT_EXPORT_MODULE();
     if ([RNAlipushBridgeQueue sharedInstance].openedLocalNotification != nil) {
         [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:[RNAlipushBridgeQueue sharedInstance].openedLocalNotification];
     }
+    
+    [[RNAlipushBridgeQueue sharedInstance] scheduleBridgeQueue];
 }
 
 - (void)dealloc {
     // 避免exc_bac_access
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+RCT_EXPORT_METHOD(turnOnDebug) {
+    // 正式上线建议关闭
+    [CloudPushSDK turnOnDebug];
 }
 
 RCT_EXPORT_METHOD(getDeviceId:(RCTPromiseResolveBlock)resolve

@@ -18,7 +18,7 @@
 
 + (nonnull instancetype)sharedInstance;
 
-- (void)postNotification:(NSNotification *)notification;
+- (void)postNotification:(NSNotification *)notification status:(NSString *)status;
 - (void)scheduleBridgeQueue;
 
 @end

@@ -16,6 +16,7 @@
 
 @implementation RNAlipushBridgeQueue
 
+
 + (nonnull instancetype)sharedInstance {
   static RNAlipushBridgeQueue* sharedInstance = nil;
   static dispatch_once_t onceToken;
@@ -27,28 +28,36 @@
 }
 
 
-- (instancetype)init
-{
-  self = [super init];
-  if (self) {
-    self.jsDidLoad = NO;
-    _bridgeQueue = [NSMutableArray new];
-  }
-  
-  return self;
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        self.jsDidLoad = NO;
+        _bridgeQueue = [NSMutableArray new];
+    }
+
+    return self;
 }
 
-- (void)postNotification:(NSNotification *)notification {
-  if (!_bridgeQueue) return;
-    id obj = [notification object];
+
+- (void)postNotification:(NSNotification *)notification status:(NSString *)status {
+    if (!_bridgeQueue) return;
+    id obj = [[notification object] mutableCopy];
+    [obj setValue:status forKey:@"status"];
     [_bridgeQueue insertObject:obj atIndex:0];
 }
 
+
 - (void)scheduleBridgeQueue {
-  for (NSDictionary *notification in _bridgeQueue) {
-    [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:notification];
-  }
-  [_bridgeQueue removeAllObjects];
+    for (NSDictionary *notification in _bridgeQueue) {
+        NSLog(@"%@", notification);
+        NSString* status = [notification objectForKey:@"status"];
+        if ([status isEqual: @"receive"]) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:notification];
+        } else if ([status isEqual: @"open"]) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidOpenApnsNotification object:notification];
+        }
+    }
+    [_bridgeQueue removeAllObjects];
 }
 
 @end

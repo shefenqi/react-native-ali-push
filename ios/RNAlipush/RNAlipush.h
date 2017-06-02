@@ -24,8 +24,7 @@
 
 // 收到apn推送
 #define CCPDidReceiveApnsNotification  @"CCPDidReceiveApnsNotification"
-//#define CCPDidReceiveApnsNotificationForeground  @"CCPDidReceiveApnsNotificationForeground"
-//#define CCPDidReceiveApnsNotificationBackground  @"CCPDidReceiveApnsNotificationBackground"
+#define CCPDidOpenApnsNotification  @"CCPDidOpenApnsNotification"
 
 
 @interface RNAlipush : NSObject <RCTBridgeModule>
