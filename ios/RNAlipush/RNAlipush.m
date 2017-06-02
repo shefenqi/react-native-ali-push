@@ -41,7 +41,7 @@ RCT_EXPORT_MODULE();
     // SDK初始化
     [CloudPushSDK asyncInit:appKey appSecret:appSecret callback:^(CloudPushCallbackResult *res) {
         if (res.success) {
-            NSLog(@"Push SDK init success, deviceId: %@.", [CloudPushSDK getDeviceId]);
+            NSLog(@"Push SDK init success, deviceId: %@", [CloudPushSDK getDeviceId]);
         } else {
             NSLog(@"Push SDK init failed, error: %@", res.error);
         }
@@ -55,19 +55,11 @@ RCT_EXPORT_MODULE();
  */
 + (void)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     NSLog(@"launchOptions: %@", launchOptions);
-    // 注册苹果推送，获取deviceToken用于推送
-    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0) {
-        // iOS 8 Notifications
-        [application registerUserNotificationSettings:
-         [UIUserNotificationSettings settingsForTypes:
-          (UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge)
-                                           categories:nil]];
-        [application registerForRemoteNotifications];
-    }
     
     // 点击通知将App从关闭状态启动时，将通知打开回执上报
     [CloudPushSDK sendNotificationAck:launchOptions];
 }
+
 
 + (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     /**
@@ -192,7 +184,7 @@ RCT_EXPORT_MODULE();
     // 处理iOS 10通知，并上报通知打开回执
     NSDictionary * userInfo = response.notification.request.content.userInfo;
     if([response.notification.request.trigger isKindOfClass:[UNPushNotificationTrigger class]]) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:userInfo];
+        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidOpenApnsNotification object:userInfo];
         // 通知打开回执上报
         [CloudPushSDK sendNotificationAck:userInfo];
     }
