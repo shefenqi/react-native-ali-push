@@ -288,11 +288,13 @@ RCT_EXPORT_MODULE();
     [RNAlipushBridgeQueue sharedInstance].jsDidLoad = YES;
     
     if ([RNAlipushBridgeQueue sharedInstance].openedRemoteNotification != nil) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:[RNAlipushBridgeQueue sharedInstance].openedRemoteNotification];
+        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidOpenApnsNotification object:[RNAlipushBridgeQueue sharedInstance].openedRemoteNotification];
+//        [RNAlipushBridgeQueue sharedInstance].openedRemoteNotification = nil;
     }
     
     if ([RNAlipushBridgeQueue sharedInstance].openedLocalNotification != nil) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidReceiveApnsNotification object:[RNAlipushBridgeQueue sharedInstance].openedLocalNotification];
+        [[NSNotificationCenter defaultCenter] postNotificationName:CCPDidOpenApnsNotification object:[RNAlipushBridgeQueue sharedInstance].openedLocalNotification];
+//        [RNAlipushBridgeQueue sharedInstance].openedLocalNotification = nil;
     }
     
     [[RNAlipushBridgeQueue sharedInstance] scheduleBridgeQueue];
