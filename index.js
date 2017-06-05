@@ -10,7 +10,7 @@ import {
 const RNAlipush = NativeModules.RNAlipush;
 
 // android only
-const ALIPUSH_ON_NOTIFICATION = 'ALIPUSH_ON_NOTIFICATION';
+const ALIPUSH_ON_NOTIFICATION_RECEIVED = 'ALIPUSH_ON_NOTIFICATION_RECEIVED';
 const ALIPUSH_ON_NOTIFICATION_OPENED = 'ALIPUSH_ON_NOTIFICATION_OPENED';
 const ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION = 'ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION';
 
@@ -47,12 +47,12 @@ export default class Alipush {
   }
 
   /**
-   * android ALIPUSH_ON_NOTIFICATION
+   * android ALIPUSH_ON_NOTIFICATION_RECEIVED
    * ios CCPDidReceiveApnsNotification
    * @param {function} cb
    */
   static addOnNotificationReceivedListener(cb) {
-    const EVENT_CODE = Platform.OS === 'android' ? ALIPUSH_ON_NOTIFICATION : CCPDidReceiveApnsNotification;
+    const EVENT_CODE = Platform.OS === 'android' ? ALIPUSH_ON_NOTIFICATION_RECEIVED : CCPDidReceiveApnsNotification;
 
     DeviceEventEmitter.removeAllListeners(EVENT_CODE);
     DeviceEventEmitter.addListener(EVENT_CODE, (notification) => {
