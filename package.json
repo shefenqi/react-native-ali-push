@@ -1,6 +1,6 @@
 {
   "name": "react-native-ali-push",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "阿里云推送 for react-native",
   "main": "index.js",
   "scripts": {
