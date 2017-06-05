@@ -25,8 +25,8 @@ npm link react-native-ali-push
 在`android/settings.gradle`中，加入：
 
 ```
-  include ':react-native-ali-push'   // <--- add this line
-  project(':react-native-ali-push').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-ali-push/android')   // <--- add this line
+  include ':react-native-ali-push'
+  project(':react-native-ali-push').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-ali-push/android')
 ```
 
 在`android/app/build.gradle`中，加入：
@@ -35,7 +35,7 @@ npm link react-native-ali-push
 dependencies {
   ...
   ...
-  compile project(':react-native-ali-push')
+  compile project(':react-native-ali-push')      // <--- add this line
 }
 ```
 
@@ -74,6 +74,8 @@ source 'https://github.com/aliyun/aliyun-specs.git'
 pod 'AlicloudPush', '~> 1.9.1'
 ```
 
+在`AppDelegate.m`里加入（全部复制）：
+
 ```
 // 阿里云推送
 #import <CloudPushSDK/CloudPushSDK.h>
@@ -91,9 +93,9 @@ pod 'AlicloudPush', '~> 1.9.1'
   /**
    * react-native-ali-push
    */
-  [self authorizeNotification];
-  [RNAlipush initCloudPushWithAppKey:ALIPUSH_APP_KEY AndAppSecret:ALIPUSH_APP_SECRET];
-  [RNAlipush application:application didFinishLaunchingWithOptions:launchOptions];
+  [self authorizeNotification];      // <--- add this line
+  [RNAlipush initCloudPushWithAppKey:ALIPUSH_APP_KEY AndAppSecret:ALIPUSH_APP_SECRET];      // <--- add this line
+  [RNAlipush application:application didFinishLaunchingWithOptions:launchOptions];      // <--- add this line
 
   ......
 }
