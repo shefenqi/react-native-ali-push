@@ -74,6 +74,16 @@ source 'https://github.com/aliyun/aliyun-specs.git'
 pod 'AlicloudPush', '~> 1.9.1'
 ```
 
+在项目下加入公共包：
+
+```
+libz.tbd
+libresolv.tbd
+CoreTelephony.framework
+SystemConfiguration.framework
+libsqlite3.tbd（阿里云平台下载的SDK无需依赖，百川平台下载的SDK需要依赖）
+```
+
 在`AppDelegate.m`里加入（全部复制）：
 
 ```
@@ -205,6 +215,23 @@ pod 'AlicloudPush', '~> 1.9.1'
   [RNAlipush userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
 }
 // ------------  react-native-ali-push end (Method settings)  --------------------
+```
+
+### js配置
+
+在js下，仅需引入`react-native-ali-push`，并监听下述事件即可完成操作：
+
+```
+  /**
+  * 添加listener，必须在app启动时执行的方法
+  */
+  RNAlipush.addOnNotificationReceivedListener((notification) => {
+    console.log('on notification received', notification);
+  });
+
+  RNAlipush.addOnNotificationOpenedListener((notification) => {
+    console.log('on notification opened', notification);
+  });
 ```
 
 ### 解决utdid冲突的问题
