@@ -1,6 +1,8 @@
 # react-native-ali-push
 
 # 阿里云推送 for REACT-NATIVE
+
+[![npm version](https://badge.fury.io/js/react-native-ali-push.svg)](https://badge.fury.io/js/react-native-ali-push)
 ### 配置
 
 ```
