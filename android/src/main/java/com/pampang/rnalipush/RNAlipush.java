@@ -121,22 +121,29 @@ public class RNAlipush extends ReactContextBaseJavaModule {
             handler.post(new Runnable() {
                 public void run() {
                     // Construct and load our normal React JS code bundle
-                    ReactInstanceManager mReactInstanceManager = ((ReactApplication) getApplication()).getReactNativeHost().getReactInstanceManager();
-                    ReactContext context = mReactInstanceManager.getCurrentReactContext();
-                    // If it's constructed, send a notification
-                    if (context != null) {
-                        sendEvent(eventName, convertToWritableMap(title, summary, extraMap));
-                    } else {
-                        // Otherwise wait for construction, then send the notification
-                        mReactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
-                            public void onReactContextInitialized(ReactContext context) {
-                                sendEvent(eventName, convertToWritableMap(title, summary, extraMap));
+                    try {
+                        ReactInstanceManager mReactInstanceManager = ((ReactApplication) getApplication()).getReactNativeHost().getReactInstanceManager();
+                        ReactContext context = mReactInstanceManager.getCurrentReactContext();
+                        // If it's constructed, send a notification
+                        if (context != null) {
+                            sendEvent(eventName, convertToWritableMap(title, summary, extraMap));
+                        } else {
+                            // Otherwise wait for construction, then send the notification
+                            mReactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
+                                public void onReactContextInitialized(ReactContext context) {
+                                    sendEvent(eventName, convertToWritableMap(title, summary, extraMap));
+                                }
+                            });
+                            if (!mReactInstanceManager.hasStartedCreatingInitialContext()) {
+                                // Construct it in the background
+                                mReactInstanceManager.createReactContextInBackground();
                             }
-                        });
-                        if (!mReactInstanceManager.hasStartedCreatingInitialContext()) {
-                            // Construct it in the background
-                            mReactInstanceManager.createReactContextInBackground();
                         }
+                    } catch (Throwable e) {
+                        // 报错了，不做任何事情
+                        // 主要防避：java.lang.AssertionError，来自 getApplication()
+                        // more detail: https://bugly.qq.com/v2/crash-reporting/crashes/900037366/2347/report?pid=1&start=50
+                        e.printStackTrace();
                     }
                 }
             });
