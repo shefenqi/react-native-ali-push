@@ -1,5 +1,6 @@
 package com.pampang.rnalipush;
 import android.app.ActivityManager;
+import android.app.Application;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,7 @@ import com.alibaba.sdk.android.push.noonesdk.PushServiceFactory;
 import com.alibaba.sdk.android.push.notification.CPushMessage;
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactInstanceManager;
+import com.facebook.react.ReactNativeHost;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -25,12 +27,7 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import static com.facebook.react.common.ApplicationHolder.getApplication;
 
 /**
  * Created by PAMPANG on 2017/3/3.
@@ -40,12 +37,13 @@ public class RNAlipush extends ReactContextBaseJavaModule {
 
     private static String TAG = "Alipush";
     private static RNAlipush sAlipush;
-    private static ReactApplicationContext sReactContext;
-    private static Map<String, String> sStartUpPushMap = new HashMap<String, String>();
+    private static Application mApplication;
+    private static ReactApplicationContext mReactContext;
 
-    public RNAlipush(ReactApplicationContext reactContext) {
+    public RNAlipush(Application application, ReactApplicationContext reactContext) {
         super(reactContext);
-        sReactContext = reactContext;
+        mApplication = application;
+        mReactContext = reactContext;
         sAlipush = this;
     }
 
@@ -116,16 +114,17 @@ public class RNAlipush extends ReactContextBaseJavaModule {
          * @param summary
          * @param extraMap
          */
-        private void handleNotification(final String eventName, final String title, final String summary, final String extraMap) {
+        private void handleNotification(final String eventName, final Context context, final String title, final String summary, final String extraMap) {
             Handler handler = new Handler(Looper.getMainLooper());
             handler.post(new Runnable() {
                 public void run() {
                     // Construct and load our normal React JS code bundle
                     try {
-                        ReactInstanceManager mReactInstanceManager = ((ReactApplication) getApplication()).getReactNativeHost().getReactInstanceManager();
-                        ReactContext context = mReactInstanceManager.getCurrentReactContext();
+                        ReactInstanceManager mReactInstanceManager = ((ReactApplication) mApplication).getReactNativeHost().getReactInstanceManager();
+                        ReactContext reactContext = mReactInstanceManager.getCurrentReactContext();
+
                         // If it's constructed, send a notification
-                        if (context != null) {
+                        if (reactContext != null) {
                             sendEvent(eventName, convertToWritableMap(title, summary, extraMap));
                         } else {
                             // Otherwise wait for construction, then send the notification
@@ -157,9 +156,9 @@ public class RNAlipush extends ReactContextBaseJavaModule {
         private void sendEvent(String eventName, @Nullable WritableMap map) {
             // 此处需要添加hasActiveCatalystInstance，否则可能造成崩溃
             // 问题解决参考: https://github.com/walmartreact/react-native-orientation-listener/issues/8
-            if(sReactContext.hasActiveCatalystInstance()) {
+            if(mReactContext.hasActiveCatalystInstance()) {
                 Log.i(REC_TAG, "hasActiveCatalystInstance");
-                sReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                mReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                         .emit(eventName, map);
             } else {
                 Log.i(REC_TAG, "not hasActiveCatalystInstance");
@@ -192,7 +191,7 @@ public class RNAlipush extends ReactContextBaseJavaModule {
         @Override
         public void onNotification(Context context, String title, String summary, Map<String, String> extraMap) {
             Log.e(REC_TAG, "Receive notification, title: " + title + ", summary: " + summary + ", extraMap: " + extraMap);
-            if(sReactContext != null && sReactContext.getCurrentActivity() != null) {
+            if(mReactContext != null && mReactContext.getCurrentActivity() != null) {
                 Log.e(REC_TAG, "app is ready, sending event.");
                 sendEvent(ALIPUSH_ON_NOTIFICATION_RECEIVED, convertToWritableMap(title, summary, convertMapToJson(extraMap)));
             }
@@ -218,13 +217,13 @@ public class RNAlipush extends ReactContextBaseJavaModule {
         @Override
         public void onNotificationOpened(Context context, final String title, final String summary, final String extraMap) {
             Log.e(REC_TAG, "onNotificationOpened, title: " + title + ", summary: " + summary + ", extraMap:" + extraMap);
-            handleNotification(ALIPUSH_ON_NOTIFICATION_OPENED, title, summary, extraMap);
+            handleNotification(ALIPUSH_ON_NOTIFICATION_OPENED, context, title, summary, extraMap);
         }
 
         @Override
         protected void onNotificationClickedWithNoAction(Context context, String title, String summary, String extraMap) {
             Log.e(REC_TAG, "onNotificationClickedWithNoAction, title: " + title + ", summary: " + summary + ", extraMap:" + extraMap);
-            handleNotification(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION, title, summary, extraMap);
+            handleNotification(ALIPUSH_ON_NOTIFICATION_OPENED_WITH_NO_ACTION, context, title, summary, extraMap);
         }
 
         @Override
@@ -238,44 +237,7 @@ public class RNAlipush extends ReactContextBaseJavaModule {
         }
     }
 
-    /**
-     * 查看application是否正在运行
-     * @param context
-     * @return
-     */
-    private static boolean isApplicationRunning(final Context context) {
-        ActivityManager activityManager = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> processInfos = activityManager.getRunningAppProcesses();
-        if (processInfos != null) {
-            for (ActivityManager.RunningAppProcessInfo processInfo : processInfos) {
-                if (processInfo.processName.equals(getApplication().getPackageName())) {
-                    if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                        for (String d : processInfo.pkgList) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
 
-    /**
-     * 查看application是否正在后台运行
-     * @param context 普通context即可，无须reactContext
-     * @return
-     */
-    private static boolean isApplicationRunningBackground(final Context context) {
-        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(1);
-        if (!tasks.isEmpty()) {
-            ComponentName topActivity = tasks.get(0).topActivity;
-            if (!topActivity.getPackageName().equals(context.getPackageName())) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * 打开app
@@ -283,7 +245,7 @@ public class RNAlipush extends ReactContextBaseJavaModule {
      */
     private static void startApplication(Context context) {
         // 此方法仅用于打开app，无法跳转到对应的activity
-        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(sReactContext.getPackageName());
+        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(mReactContext.getPackageName());
         context.startActivity(launchIntent);
     }
 

@@ -1,4 +1,6 @@
 package com.pampang.rnalipush;
+import android.app.Application;
+
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
@@ -15,10 +17,16 @@ import java.util.List;
 
 public class RNAlipushPackage  implements ReactPackage {
 
+    final Application mApplication;
+
+    public RNAlipushPackage(Application application) {
+        mApplication = application;
+    }
+
     @Override
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
         return Arrays.asList(new NativeModule[] {
-                new RNAlipush(reactContext)
+                new RNAlipush(mApplication, reactContext)
         });
     }
 
